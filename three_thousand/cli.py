@@ -69,7 +69,12 @@ def watch(
     config, store = _build_runtime()
     detector = MotionDetector(area_threshold_ratio=motion_threshold)
 
-    capture = cv2.VideoCapture(config.camera_index)
+    try:
+        capture = cv2.VideoCapture(config.camera_index)
+    except Exception:
+        print_error("OpenCV could not initialize camera capture.")
+        raise typer.Exit(code=1)
+
     if not capture or not capture.isOpened():
         if capture:
             capture.release()
@@ -84,20 +89,26 @@ def watch(
                 print_error("Camera frame read failed. Stopping watch.")
                 break
 
-            result = detector.detect(frame)
-            if result.detected:
-                snapshot_path = save_frame(frame, config.snapshots_dir)
-                store.add_event(
-                    event_type="motion_detected",
-                    confidence=result.confidence,
-                    snapshot_path=str(snapshot_path),
-                    metadata=result.metadata,
-                )
-                print_motion_alert(result.confidence, str(snapshot_path))
+            try:
+                result = detector.detect(frame)
+                if result.detected:
+                    snapshot_path = save_frame(frame, config.snapshots_dir)
+                    store.add_event(
+                        event_type="motion_detected",
+                        confidence=result.confidence,
+                        snapshot_path=str(snapshot_path),
+                        metadata=result.metadata,
+                    )
+                    print_motion_alert(result.confidence, str(snapshot_path))
+            except Exception:
+                print_error("Frame processing failed; continuing watch loop.")
 
             time.sleep(interval_seconds)
     except KeyboardInterrupt:
         console.print("[cyan]Watch stopped.[/cyan]")
+    except Exception:
+        print_error("Watch failed unexpectedly.")
+        raise typer.Exit(code=1)
     finally:
         capture.release()
 
