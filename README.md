@@ -26,6 +26,16 @@ pip install -e ".[dev]"
 3000 events
 ```
 
+## Screenshots
+
+### 3000 status
+
+![3000 status screenshot](docs/screenshots/status.png)
+
+### 3000 watch
+
+![3000 watch screenshot](docs/screenshots/watch.png)
+
 ### Command behavior
 
 - `3000 status`: checks camera availability.
