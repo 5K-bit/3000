@@ -1,5 +1,7 @@
 # 3000
 
+[![CI](https://github.com/5K-bit/3000/actions/workflows/ci.yml/badge.svg)](https://github.com/5K-bit/3000/actions/workflows/ci.yml)
+
 3000 is a local-first computer vision sentinel. It watches a camera feed, detects motion, saves snapshots, and writes events locally.
 
 ## Requirements
