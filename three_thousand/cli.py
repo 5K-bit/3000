@@ -8,15 +8,9 @@ import typer
 from three_thousand.core.camera import capture_frame, is_camera_available, save_frame
 from three_thousand.core.config import AppConfig
 from three_thousand.core.motion import MotionDetector
+from three_thousand.obeos_events import publish_event
 from three_thousand.storage.sqlite_store import SQLiteStore
-from three_thousand.ui.console import (
-    console,
-    print_error,
-    print_events,
-    print_motion_alert,
-    print_snapshot_saved,
-    print_status,
-)
+from three_thousand.ui.console import console, print_error, print_events, print_motion_alert, print_snapshot_saved, print_status
 
 app = typer.Typer(help="3000 local-first camera sentinel.", no_args_is_help=True)
 
@@ -49,8 +43,8 @@ def snapshot() -> None:
         if frame is None:
             print_error("Unable to capture frame. Is a camera available?")
             raise typer.Exit(code=1)
-
         snapshot_path = save_frame(frame, config.snapshots_dir)
+        publish_event("project3000.snapshot.created", {"snapshot_path": str(snapshot_path)})
         print_snapshot_saved(str(snapshot_path))
     except RuntimeError as exc:
         print_error(str(exc))
@@ -68,19 +62,16 @@ def watch(
     """Run motion detection loop and persist local events."""
     config, store = _build_runtime()
     detector = MotionDetector(area_threshold_ratio=motion_threshold)
-
     try:
         capture = cv2.VideoCapture(config.camera_index)
     except Exception:
         print_error("OpenCV could not initialize camera capture.")
         raise typer.Exit(code=1)
-
     if not capture or not capture.isOpened():
         if capture:
             capture.release()
         print_error("Camera unavailable. Cannot start watch.")
         raise typer.Exit(code=1)
-
     console.print("[cyan]Watching camera feed. Press Ctrl+C to stop.[/cyan]")
     try:
         while True:
@@ -88,7 +79,6 @@ def watch(
             if not ok:
                 print_error("Camera frame read failed. Stopping watch.")
                 break
-
             try:
                 result = detector.detect(frame)
                 if result.detected:
@@ -99,10 +89,14 @@ def watch(
                         snapshot_path=str(snapshot_path),
                         metadata=result.metadata,
                     )
+                    publish_event("project3000.motion.detected", {
+                        "confidence": result.confidence,
+                        "snapshot_path": str(snapshot_path),
+                        "metadata": result.metadata,
+                    })
                     print_motion_alert(result.confidence, str(snapshot_path))
             except Exception:
                 print_error("Frame processing failed; continuing watch loop.")
-
             time.sleep(interval_seconds)
     except KeyboardInterrupt:
         console.print("[cyan]Watch stopped.[/cyan]")
