@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "3000",
+  "component_type": "device",
+  "version": "0.1.0",
+  "entrypoint": "3000",
+  "interfaces": ["cli", "camera", "sqlite-events"],
+  "capabilities": ["camera-status", "snapshot", "motion-watch", "detection-events"],
+  "lifecycle": "operator-managed",
+  "health": {"mode": "command", "command": "3000 status"},
+  "dependencies": [],
+  "source_repository": "5K-bit/3000"
+}
