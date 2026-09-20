@@ -8,7 +8,7 @@ import typer
 from three_thousand.core.camera import capture_frame, is_camera_available, save_frame
 from three_thousand.core.config import AppConfig
 from three_thousand.core.motion import MotionDetector
-from three_thousand.obeos_events import publish_event
+from three_thousand.obeos_events import enqueue_event as publish_event, delivery_status, shutdown_delivery, start_delivery
 from three_thousand.storage.sqlite_store import SQLiteStore
 from three_thousand.ui.console import console, print_error, print_events, print_motion_alert, print_snapshot_saved, print_status
 
@@ -32,6 +32,7 @@ def status() -> None:
     except Exception:
         available = False
     print_status(available)
+    console.print({"event_delivery": delivery_status()})
 
 
 @app.command()
@@ -72,6 +73,7 @@ def watch(
             capture.release()
         print_error("Camera unavailable. Cannot start watch.")
         raise typer.Exit(code=1)
+    start_delivery()
     console.print("[cyan]Watching camera feed. Press Ctrl+C to stop.[/cyan]")
     try:
         while True:
@@ -90,6 +92,7 @@ def watch(
                         metadata=result.metadata,
                     )
                     publish_event("project3000.motion.detected", {
+                        "camera_id": str(config.camera_index),
                         "confidence": result.confidence,
                         "snapshot_path": str(snapshot_path),
                         "metadata": result.metadata,
@@ -105,6 +108,7 @@ def watch(
         raise typer.Exit(code=1)
     finally:
         capture.release()
+        shutdown_delivery()
 
 
 @app.command()

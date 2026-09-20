@@ -16,7 +16,7 @@ def print_status(available: bool) -> None:
 
 
 def print_snapshot_saved(snapshot_path: str) -> None:
-    console.print(f"[green]Snapshot saved:[/green] {snapshot_path}")
+    console.print("Snapshot saved: " + snapshot_path, style="green", markup=False, soft_wrap=True)
 
 
 def print_motion_alert(confidence: float, snapshot_path: str) -> None:
