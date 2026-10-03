@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import closing
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -14,7 +15,7 @@ class SQLiteStore:
 
     def initialize(self) -> None:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.database_path) as connection:
+        with closing(sqlite3.connect(self.database_path)) as connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS events (
@@ -37,7 +38,7 @@ class SQLiteStore:
         metadata: dict[str, Any] | None = None,
     ) -> int:
         payload = json.dumps(sanitize_metadata(metadata))
-        with sqlite3.connect(self.database_path) as connection:
+        with closing(sqlite3.connect(self.database_path)) as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO events (timestamp, event_type, confidence, snapshot_path, metadata_json)
@@ -49,7 +50,7 @@ class SQLiteStore:
             return int(cursor.lastrowid)
 
     def list_events(self, limit: int = 20) -> list[Event]:
-        with sqlite3.connect(self.database_path) as connection:
+        with closing(sqlite3.connect(self.database_path)) as connection:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(
                 """
