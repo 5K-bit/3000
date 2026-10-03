@@ -12,7 +12,7 @@ Implement these milestones in dependency order. Keep `5K-bit/3000` authoritative
 
 | Milestone | Implementation | Acceptance gate | Status |
 | --- | --- | --- | --- |
-| M1: reliable single-camera observations | Configurable USB/RTSP source and stable camera ID; reconnect with capped backoff; reset motion baseline after reconnect; snapshot cooldown; local evidence/event IDs; persistent JSON health; durable OBEOS delivery regression tests | Simulated disconnect/reconnect, image write failure, missing/stale health and queue restart tests pass; one real-camera disconnect and OBEOS receipt verified on Blackcomputer | Building in this change; hardware gate pending |
+| M1: reliable single-camera observations | Configurable USB/RTSP source and stable camera ID; reconnect with capped backoff; reset motion baseline after reconnect; snapshot cooldown; local evidence/event IDs; persistent JSON health; durable OBEOS delivery regression tests | Simulated disconnect/reconnect, image write failure, missing/stale health and queue restart tests pass; one real-camera disconnect and OBEOS receipt verified on Blackcomputer | Implemented; automated validation below; hardware gate pending |
 | M2: bounded recording | Segmented recording with pre/post-motion clips, evidence manifest, byte/age retention, reserved free space, restart reconciliation of partial files | A known motion interval includes configured lead-in/lead-out; kill/restart leaves playable completed clips; full disk never silently loses acknowledged evidence | Planned after M1 |
 | M3: multi-camera supervision | Camera registry, one capture worker per source, bounded queues, per-camera FPS/resolution budgets and independent recovery | Disconnect one camera while another records; enforce measured memory/CPU/storage budgets on Blackcomputer | Planned after M2 |
 | M4: optional local detection | Local person/object detector adapter, zones, thresholds and inference sampling; motion-only fallback if unavailable | Labeled local clips measure false alerts and missed detections; missing model keeps capture working; no model/cloud download during operation | Planned after M3 |
@@ -59,7 +59,7 @@ Use one watcher per data directory. M1 runs synchronously with no accumulating f
 | `PROJECT3000_CAMERA_SOURCE` | `0` | USB index or network camera URL; never included in events or health |
 | `PROJECT3000_CAMERA_ID` | `camera-0` | Stable non-secret identity, letters/numbers/dot/underscore/hyphen |
 | `PROJECT3000_DATA_DIR` | `data` | Local evidence, SQLite events and runtime health |
-| `OBEOS_EVENT_URL` | unset | Canonical OBEOS event-ingestion endpoint; unset means standalone |
+| `OBEOS_EVENT_URL` | unset | Canonical `/events/v1/publish` endpoint from OBEOS PR #7; unset means standalone |
 | `OBEOS_DELIVERY_DB` | `~/.project3000/event-delivery.sqlite3` | Durable outbound queue; must be on local writable storage |
 
 ```text
@@ -73,7 +73,7 @@ Use one watcher per data directory. M1 runs synchronously with no accumulating f
 3000 events --json --limit 20        Read structured local evidence history
 ```
 
-`health` is a runtime check, while `status` is a one-off device probe. Missing heartbeat is `unknown`, stale or stopped runtime is `down`, reconnecting/storage/delivery problems are `degraded`, and a fresh working runtime is `ok`. A local motion score is changed-area ratio, not a calibrated probability of a person or threat.
+`health` exits 0 only for `ok` (otherwise 1, with JSON still emitted). `health` is a runtime check, while `status` is a one-off device probe. Missing heartbeat is `unknown`, stale or stopped runtime is `down`, reconnecting/storage/delivery problems are `degraded`, and a fresh working runtime is `ok`. A local motion score is changed-area ratio, not a calibrated probability of a person or threat.
 
 ## Evidence and delivery
 
@@ -89,6 +89,14 @@ Snapshots are rate-limited and a free-space guard prevents new writes below the 
 python -m pytest
 python -m pip wheel . --no-deps --wheel-dir dist
 ```
+
+### Automated evidence for M1 (2026-10-03)
+
+- Linux / Python 3.12: **35 tests passed** (8 baseline tests plus new regression coverage).
+- Built `3000-0.2.0-py3-none-any.whl` successfully.
+- Additional loopback check: synthetic image → local SQLite event → durable sender → HTTP receiver validated with OBEOS's actual `EventEnvelope`; receiver evidence matched a decodable local image. Emitted health round-tripped through OBEOS's actual `HealthRecord`.
+- Contract source: OBEOS PR #7 revision `5240cb536d4cc2f151e1a22f22716a747e2bfe4b`. This validates the classes, **not** the full running OBEOS ingestor, its deduplication or HUD.
+- CI now requests Python 3.11/3.12 on Ubuntu and Windows, including wheel builds. Remote results must be checked on the PR; local Linux results do not establish Windows success.
 
 Hardware-free tests cover synthetic motion, capture recovery, evidence persistence, health states and durable queue behavior. Before calling M1 operationally accepted, record:
 

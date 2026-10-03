@@ -24,3 +24,9 @@ def test_motion_detected_on_synthetic_difference() -> None:
 
     assert result.detected is True
     assert result.confidence > 0.01
+
+
+def test_resolution_change_establishes_new_baseline():
+    detector = MotionDetector()
+    detector.detect(np.zeros((120, 120, 3), dtype=np.uint8))
+    assert not detector.detect(np.full((60, 60, 3), 255, dtype=np.uint8)).detected

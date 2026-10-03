@@ -19,11 +19,14 @@ class MotionDetector:
         self._previous_gray: np.ndarray | None = None
         self._area_threshold_ratio = area_threshold_ratio
 
+    def reset(self) -> None:
+        self._previous_gray = None
+
     def detect(self, frame: np.ndarray) -> MotionResult:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
-        if self._previous_gray is None:
+        if self._previous_gray is None or self._previous_gray.shape != gray.shape:
             self._previous_gray = gray
             return MotionResult(detected=False, confidence=0.0, metadata={"max_area": 0.0})
 
