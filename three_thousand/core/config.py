@@ -9,8 +9,9 @@ class AppConfig:
     data_dir: Path = Path("data")
     snapshots_subdir: str = "snapshots"
     database_name: str = "events.sqlite3"
-    camera_index: int = 0
+    camera_index: int | str = 0
     motion_area_threshold: float = 0.02
+    cooldown_seconds: float = 5.0
 
     @property
     def snapshots_dir(self) -> Path:

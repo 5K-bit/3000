@@ -28,13 +28,24 @@ pip install -e ".[dev]"
 
 ### Command behavior
 
-- `3000 status`: checks camera availability.
-- `3000 snapshot`: captures one frame and writes it to `data/snapshots/`.
-- `3000 watch`: runs frame-differencing motion detection. On motion:
+All camera commands take `--source` (or `THREE_THOUSAND_SOURCE`): a camera index like `0` (default) or a path to a video file, so you can try 3000 without a webcam.
+
+- `3000 status`: checks the source; exits `1` if unavailable (usable as a health check).
+- `3000 snapshot`: captures one frame, writes it to `data/snapshots/`, and records a `snapshot_created` event.
+- `3000 watch`: frame-differencing motion detection. On motion:
   - saves snapshot
   - writes event to SQLite (`data/events.sqlite3`)
   - prints a Rich alert in terminal
-- `3000 events`: lists recent detection events.
+
+  Options: `--motion-threshold` (area ratio, default 0.02), `--cooldown-seconds` (min gap between events, default 5), `--interval-seconds`, `--max-frames`. A video file source stops at end of file.
+- `3000 events`: lists recent events; `--limit N`, `--json` for JSON lines.
+
+### Try it without a camera
+
+```bash
+3000 watch --source clip.mp4 --interval-seconds 0
+3000 events
+```
 
 ## Local data layout
 
