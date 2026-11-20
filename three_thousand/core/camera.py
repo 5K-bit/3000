@@ -11,7 +11,18 @@ def _utc_suffix() -> str:
     return datetime.now(tz=timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 
 
-def is_camera_available(camera_index: int = 0) -> bool:
+Source = int | str
+
+
+def parse_source(value: str | int) -> Source:
+    """Turn a CLI value into an OpenCV source: digits -> camera index, else a file path."""
+    if isinstance(value, int):
+        return value
+    value = value.strip()
+    return int(value) if value.isdigit() else value
+
+
+def is_camera_available(camera_index: Source = 0) -> bool:
     try:
         capture = cv2.VideoCapture(camera_index)
     except Exception:
@@ -29,7 +40,7 @@ def is_camera_available(camera_index: int = 0) -> bool:
             capture.release()
 
 
-def capture_frame(camera_index: int = 0) -> np.ndarray | None:
+def capture_frame(camera_index: Source = 0) -> np.ndarray | None:
     try:
         capture = cv2.VideoCapture(camera_index)
     except Exception:

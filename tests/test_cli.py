@@ -12,7 +12,7 @@ runner = CliRunner()
 def test_status_handles_unavailable_camera(monkeypatch) -> None:
     monkeypatch.setattr(cli, "is_camera_available", lambda _idx: False)
     result = runner.invoke(cli.app, ["status"])
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "unavailable" in result.stdout.lower()
 
 
